@@ -130,6 +130,24 @@ vector<double> excel(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer,
         outfile.close();
            }
     
+    
+
+    return data;
+}
+
+
+
+
+
+
+
+
+void last_pressure (pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, int i) {
+
+    double p_begin = myPipe.p_0;
+    double p_begin_2 = myPipe.p_0;
+    vector<vector<double>>& current_layer = buffer.current();
+    vector<vector<double>>& previous_layer = buffer.previous();
     //временной ряд
     if (i == 0) {
 
@@ -145,7 +163,7 @@ vector<double> excel(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer,
             double p_rachet = p_begin - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - M_G * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
             p_begin = p_rachet;
         }
-        outFile << 0 << "," << i * myPipe.get_dt() << "," << previous_layer[2][myPipe.N-1] << "\n";
+        outFile << 0 << "," << i * myPipe.get_dt() << "," << previous_layer[2][myPipe.N - 1] << "\n";
         outFile.close();
     }
     else {
@@ -162,9 +180,22 @@ vector<double> excel(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer,
         outFile << 0 << "," << i * myPipe.get_dt() << "," << previous_layer[2][myPipe.N - 1] << "\n";
         outFile.close();
     }
-
-    return data;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void excel_2(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, int i, const vector <double>& data) {
@@ -224,6 +255,7 @@ int main()
 
     for (size_t i = 0; i < myPipe.get_n()+2; i++) {
         excel(myPipe, buffer, i, data_excel);
+        last_pressure(myPipe, buffer, i);
         rashet(myPipe, ro.massiv[0], buffer.current()[0], buffer.previous()[0]);
         rashet(myPipe, u.massiv[0], buffer.current()[1], buffer.previous()[1]);
         vector<double> data_excel_2 = excel(myPipe, buffer, i, data_excel);
