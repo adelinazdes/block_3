@@ -96,19 +96,20 @@ void rashet(pipe myPipe, double parametr, vector<double>& current_layer, vector<
 }
 
 vector<double> excel(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, int i, vector <double>& data) {
-    vector<vector<double>>& current_layer = buffer.current();
+    
 
     double p_0 = myPipe.p_0;
-
+    double p_begin = myPipe.p_0;
+    double p_begin_2 = myPipe.p_0;
+    vector<vector<double>>& current_layer = buffer.current();
+    vector<vector<double>>& previous_layer = buffer.previous();
 
     if (i == 0) {
-        ofstream outFile("3block.csv");
-        outFile << "время,координата,плотность, вязкость, давление, разность давления" << "\n";
-        // Записать значения текущего слоя в файл
+        ofstream outfile("3block.csv");
+        outfile << "время,координата,плотность, вязкость, давление, разность давления" << "\n";
+        // записать значения текущего слоя в файл
         int b = current_layer[0].size();//размер 11 точек
-        current_layer[0] = (buffer.current())[0];
-        vector<vector<double>>previous_layer = (buffer.previous());
-        previous_layer[0] = (buffer.previous())[0];
+     
         for (size_t j = 0; j < b; j++) {
             double Re = myPipe.V * myPipe.get_inner_diameter() / previous_layer[1][j];
             double lambda = hydraulic_resistance_isaev(Re, myPipe.get_relative_roughness());
@@ -122,44 +123,43 @@ vector<double> excel(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer,
                 cout << data[j] << "\n";
          
            
-            outFile << i * myPipe.get_dt() << "," << (j)*myPipe.get_dx() << "," << previous_layer[0][j] << "," << previous_layer[1][j] << "," << previous_layer[2][j] << "," << previous_layer[2][j] - data[j] << "\n";
+            outfile << i * myPipe.get_dt() << "," << (j)*myPipe.get_dx() << "," << previous_layer[0][j] << "," << previous_layer[1][j] << "," << previous_layer[2][j] << "," << previous_layer[2][j] - data[j] << "\n";
             
         }
                      
-        outFile.close();
+        outfile.close();
            }
     
     //временной ряд
-
     if (i == 0) {
+
         ofstream outFile("pressure_last.csv");
         outFile << "нули,время,давление" << "\n";
         // Записать значения текущего слоя в файл
 
-        for (size_t j = 1; j < current_layer[0].size(); j++) {
+        for (size_t j = 0; j < current_layer[0].size(); j++) {
 
-            double Re = myPipe.V * myPipe.get_inner_diameter() / current_layer[1][j];
+            double Re = myPipe.V * myPipe.get_inner_diameter() / previous_layer[1][j];
             double lambda = hydraulic_resistance_isaev(Re, myPipe.get_relative_roughness());
-            current_layer[2][j] = p_0;
-            double p_rachet = p_0 + myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * current_layer[0][j ] * pow(myPipe.V, 2) / 2 - M_G * current_layer[0][j ] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
-            p_0 = p_rachet;
-
+            previous_layer[2][j] = p_begin;
+            double p_rachet = p_begin - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - M_G * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
+            p_begin = p_rachet;
         }
-        outFile << 0 << "," << i * myPipe.get_dt() << "," << current_layer[2][myPipe.N - 1] << "\n";
+        outFile << 0 << "," << i * myPipe.get_dt() << "," << previous_layer[2][myPipe.N-1] << "\n";
         outFile.close();
     }
     else {
         ofstream outFile("pressure_last.csv", ios::app);
         // Записать значения текущего слоя в файл
-        for (size_t j = 1; j < current_layer[0].size(); j++) {
-            double Re = myPipe.V * myPipe.get_inner_diameter() / current_layer[1][j];
+        for (size_t j = 0; j < current_layer[0].size(); j++) {
+            double Re = myPipe.V * myPipe.get_inner_diameter() / previous_layer[1][j];
             double lambda = hydraulic_resistance_isaev(Re, myPipe.get_relative_roughness());
-            current_layer[2][j] = p_0;
-            double p_rachet = p_0 + myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * current_layer[0][j ] * pow(myPipe.V, 2) / 2 - M_G * current_layer[0][j ] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
-            p_0 = p_rachet;
+            previous_layer[2][j] = p_begin_2;
+            double p_rachet = p_begin_2 - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - M_G * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
+            p_begin_2 = p_rachet;
 
         }
-        outFile << 0 << "," << i * myPipe.get_dt() << "," << current_layer[2][myPipe.N - 1] << "\n";
+        outFile << 0 << "," << i * myPipe.get_dt() << "," << previous_layer[2][myPipe.N - 1] << "\n";
         outFile.close();
     }
 
@@ -202,7 +202,7 @@ int main()
     myPipe.z_0 = 100;
     myPipe.z_L = 50;
     myPipe.V = 0.5;
-    myPipe.N = 11;
+    myPipe.N = 101;
     myPipe.abc = 15e-6;
     znachenia ro;
 
