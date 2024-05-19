@@ -148,25 +148,24 @@ vector<double>  euler(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer
 
 
 
-void excel(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, int i, vector <double>& data, int j) {
+void excel(pipe myPipe, vector<vector<double>>& previous_layer, int i, vector <double>& data) {
    
-    vector<vector<double>>& current_layer = buffer.current();
-    vector<vector<double>>& previous_layer = buffer.previous();
-   
-    if (i == 0) {
-        ofstream outFile("3block.csv", ios::out);
-        setlocale(LC_ALL, "ru");
-       
-        outFile << "время,координата,плотность, вязкость, давление, разность давления" << "\n" << i * myPipe.get_dt() << "," << (j)*myPipe.get_dx() << "," << previous_layer[0][j] << "," << previous_layer[1][j] << "," << previous_layer[2][j] << "," << previous_layer[2][j] - data[j] << "\n";
-        outFile.close();
+    for (int j = 0; j < myPipe.N; j++) {
+        if (i == 0 && j == 0) {
+            ofstream outFile("3block.csv", ios::out);
+            setlocale(LC_ALL, "ru");
+            outFile << "время,координата,плотность, вязкость, давление, разность давления" << "\n";
+            outFile << i * myPipe.get_dt() << "," << (j)*myPipe.get_dx() << "," << previous_layer[0][j] << "," << previous_layer[1][j] << "," << previous_layer[2][j] << "," << previous_layer[2][j] - data[j] << "\n";
+            outFile.close();
+        }
+        else {
+            ofstream outFile("3block.csv", ios::app); // Используйте ios::app для добавления данных
+            outFile << i * myPipe.get_dt() << "," << (j)*myPipe.get_dx() << "," << previous_layer[0][j] << "," << previous_layer[1][j] << "," << previous_layer[2][j] << "," << previous_layer[2][j] - data[j] << "\n";
+            outFile.close();
+
+        }
+
     }
-    else {
-        ofstream outFile("3block.csv", ios::app); // Используйте ios::app для добавления данных
-        outFile << i * myPipe.get_dt() << "," << (j)*myPipe.get_dx() << "," << previous_layer[0][j] << "," << previous_layer[1][j] << "," << previous_layer[2][j] << "," << previous_layer[2][j] - data[j]<< "\n";
-        outFile.close();
-    }
-   
-    
 }
 
 
@@ -263,13 +262,14 @@ int main()
     for (size_t i = 0; i < myPipe.get_n() + 2; i++) {
         if (i == 0) {
             euler(myPipe, buffer, i);
+            
             last_pressure(myPipe, buffer, i);
             rashet(myPipe, ro.massiv[0], buffer.current()[0], buffer.previous()[0]);
             rashet(myPipe, u.massiv[0], buffer.current()[1], buffer.previous()[1]);
-            for (int j = 0; j < myPipe.N; j++) {
-                z.pressure = euler(myPipe, buffer, i);
-                excel(myPipe, buffer, i, z.pressure, j);
-            }
+            z.pressure = euler(myPipe, buffer, i);
+           
+               excel(myPipe, buffer.previous(), i, z.pressure);
+            
             buffer.advance(1);
         }
         else {
@@ -278,9 +278,7 @@ int main()
             last_pressure(myPipe, buffer, i);
             rashet(myPipe, ro.massiv[0], buffer.current()[0], buffer.previous()[0]);
             rashet(myPipe, u.massiv[0], buffer.current()[1], buffer.previous()[1]);
-            for (int j = 0; j < myPipe.N; j++) {
-                excel(myPipe, buffer, i, z.pressure, j);
-            }
+            excel(myPipe, buffer.previous(), i, z.pressure);
             buffer.advance(1);
         }
     }
