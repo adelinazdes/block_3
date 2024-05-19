@@ -84,7 +84,7 @@ struct znachenia
 
 struct data_iterazii {
     vector<vector<double>> buffer;
-    vector<double> ends; 
+    vector<double> pressure; 
 };
 
 
@@ -106,14 +106,14 @@ void rashet(pipe myPipe, double parametr, vector<double>& current_layer, vector<
 
 
 
-data_iterazii euler(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, int i) {
+vector<double>  euler(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, int i) {
     double p_0 = myPipe.p_0;
     double p_begin = myPipe.p_0;
     vector<vector<double>>& current_layer = buffer.current();
     vector<vector<double>>& previous_layer = buffer.previous();
     data_iterazii z;
     z.buffer = buffer.previous(); 
-    z.ends.clear(); // Очищаем вектор ends перед заполнением
+    z.pressure.clear(); // Очищаем вектор pressure перед заполнением
     if (i == 0) {
         int b = current_layer[0].size();
         for (size_t j = 0; j < b; j++) {
@@ -123,7 +123,7 @@ data_iterazii euler(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, 
             double g = 9.81; 
             double p_rachet = p_0 - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - g * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
             p_0 = p_rachet;
-            z.ends.push_back(previous_layer[2][j]); // Исправлено добавление в вектор
+            z.pressure.push_back(previous_layer[2][j]); // Исправлено добавление в вектор
             z.buffer = buffer.previous();
             
         }
@@ -141,7 +141,7 @@ data_iterazii euler(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, 
         }
     }
   
-    return z;
+    return z.pressure;
 }
 
 
@@ -154,7 +154,7 @@ void excel(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, int i, ve
     vector<vector<double>>& previous_layer = buffer.previous();
    
     if (i == 0) {
-        ofstream outFile("3block.csv", ios::app);
+        ofstream outFile("3block.csv", ios::out);
         setlocale(LC_ALL, "ru");
        
         outFile << "время,координата,плотность, вязкость, давление, разность давления" << "\n" << i * myPipe.get_dt() << "," << (j)*myPipe.get_dx() << "," << previous_layer[0][j] << "," << previous_layer[1][j] << "," << previous_layer[2][j] << "," << previous_layer[2][j] - data[j] << "\n";
@@ -162,7 +162,7 @@ void excel(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, int i, ve
     }
     else {
         ofstream outFile("3block.csv", ios::app); // Используйте ios::app для добавления данных
-        outFile << i * myPipe.get_dt() << "," << (j)*myPipe.get_dx() << "," << previous_layer[0][j] << "," << previous_layer[1][j] << "," << previous_layer[2][j] << "," << previous_layer[2][j] - data[j] << "\n";
+        outFile << i * myPipe.get_dt() << "," << (j)*myPipe.get_dx() << "," << previous_layer[0][j] << "," << previous_layer[1][j] << "," << previous_layer[2][j] << "," << previous_layer[2][j] - data[j]<< "\n";
         outFile.close();
     }
    
@@ -253,7 +253,7 @@ int main()
 
     data_iterazii z;
     z.buffer; 
-    z.ends = { 0 };
+    z.pressure = { 0 };
 
     ring_buffer_t<vector<vector<double>>> buffer(2, { ro_begin, u_begin,pressure_begin});
 
@@ -262,16 +262,13 @@ int main()
 
     for (size_t i = 0; i < myPipe.get_n() + 2; i++) {
         if (i == 0) {
-            
-            // Присваиваем результат функции z
-          
+            euler(myPipe, buffer, i);
             last_pressure(myPipe, buffer, i);
             rashet(myPipe, ro.massiv[0], buffer.current()[0], buffer.previous()[0]);
             rashet(myPipe, u.massiv[0], buffer.current()[1], buffer.previous()[1]);
             for (int j = 0; j < myPipe.N; j++) {
-                euler(myPipe, buffer, i);
-                z = euler(myPipe, buffer, i);
-                excel(myPipe, buffer, i, z.ends, j);
+                z.pressure = euler(myPipe, buffer, i);
+                excel(myPipe, buffer, i, z.pressure, j);
             }
             buffer.advance(1);
         }
@@ -282,23 +279,11 @@ int main()
             rashet(myPipe, ro.massiv[0], buffer.current()[0], buffer.previous()[0]);
             rashet(myPipe, u.massiv[0], buffer.current()[1], buffer.previous()[1]);
             for (int j = 0; j < myPipe.N; j++) {
-                excel(myPipe, buffer, i, z.ends, j);
+                excel(myPipe, buffer, i, z.pressure, j);
             }
             buffer.advance(1);
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
