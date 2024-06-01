@@ -122,8 +122,7 @@ vector<double>  euler(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer
             double Re = myPipe.V * myPipe.get_inner_diameter() / previous_layer[1][j];
             double lambda = hydraulic_resistance_isaev(Re, myPipe.get_relative_roughness());
             previous_layer[2][j] = p_0;
-            double g = 9.81;
-            double p_rachet = p_0 - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - g * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
+            double p_rachet = p_0 - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - M_G * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
             p_0 = p_rachet;
             z.pressure.push_back(previous_layer[2][j]); // Исправлено добавление в вектор
             z.buffer = buffer.previous();
@@ -136,8 +135,7 @@ vector<double>  euler(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer
             double Re = myPipe.V * myPipe.get_inner_diameter() / current_layer[1][j];
             double lambda = hydraulic_resistance_isaev(Re, myPipe.get_relative_roughness());
             previous_layer[2][j] = p_0;
-            double g = 9.81; // Добавлено объявление g
-            double p_rachet = p_0 - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - g * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
+             double p_rachet = p_0 - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - M_G * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
             p_0 = p_rachet;
             z.buffer = buffer.previous();
         }
@@ -174,49 +172,25 @@ void excel(pipe myPipe, vector<vector<double>>& previous_layer, int i, vector <d
 
 
 
+void excel_last_pressure (pipe myPipe, vector<vector<double>>& previous_layer, int i) {
 
-
-
-void last_pressure(pipe myPipe, ring_buffer_t<vector<vector<double>>>& buffer, int i) {
-
-    double p_begin = myPipe.p_0;
-    double p_begin_2 = myPipe.p_0;
-    vector<vector<double>>& current_layer = buffer.current();
-    vector<vector<double>>& previous_layer = buffer.previous();
-    //временной ряд
-    if (i == 0) {
-
-        ofstream outFile("pressure_last_1.2.csv");
-        outFile << "нули,время,давление" << "\n";
-        // Записать значения текущего слоя в файл
-
-        for (size_t j = 0; j < current_layer[0].size(); j++) {
-
-            double Re = myPipe.V * myPipe.get_inner_diameter() / previous_layer[1][j];
-            double lambda = hydraulic_resistance_isaev(Re, myPipe.get_relative_roughness());
-            previous_layer[2][j] = p_begin;
-            double p_rachet = p_begin - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - M_G * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
-            p_begin = p_rachet;
+    
+        if (i == 0) {
+            ofstream outFile("pressure_last_1.2.csv", ios::out);
+            setlocale(LC_ALL, "ru");
+            outFile << "время,координата,плотность, вязкость, давление, разность давления" << "\n";
+            outFile << 0 << "," << i * myPipe.get_dt() << "," << previous_layer[2][myPipe.N - 1] << "\n"; 
+            outFile.close();
         }
-        outFile << 0 << "," << i * myPipe.get_dt() << "," << previous_layer[2][myPipe.N - 1] << "\n";
-        outFile.close();
-    }
-    else {
-        ofstream outFile("pressure_last_1.2.csv", ios::app);
-        // Записать значения текущего слоя в файл
-        for (size_t j = 0; j < current_layer[0].size(); j++) {
-            double Re = myPipe.V * myPipe.get_inner_diameter() / previous_layer[1][j];
-            double lambda = hydraulic_resistance_isaev(Re, myPipe.get_relative_roughness());
-            previous_layer[2][j] = p_begin_2;
-            double p_rachet = p_begin_2 - myPipe.get_dx() * (lambda / myPipe.get_inner_diameter() * previous_layer[0][j] * pow(myPipe.V, 2) / 2 - M_G * previous_layer[0][j] * (myPipe.z_L - myPipe.z_0) / ((myPipe.N - 1) * myPipe.get_dx()));
-            p_begin_2 = p_rachet;
+        else {
+            ofstream outFile("pressure_last_1.2.csv", ios::app); // Используйте ios::app для добавления данных
+            outFile << 0 << "," << i * myPipe.get_dt() << "," << previous_layer[2][myPipe.N - 1] << "\n"; 
+            outFile.close();
 
         }
-        outFile << 0 << "," << i * myPipe.get_dt() << "," << previous_layer[2][myPipe.N - 1] << "\n";
-        outFile.close();
-    }
+
+    
 }
-
 
 
 
@@ -268,7 +242,7 @@ int main()
     }
 
 
-
+    
 
     znachenia pressure;
     pressure.massiv = { 0 };
@@ -289,12 +263,11 @@ int main()
     // Объявляем переменную z вне цикла
  
     cout << myPipe.number;
-
+    
     for (size_t i = 0; i < myPipe.get_n() + myPipe.number +2; i++) {
         if (i == 0) {
             euler(myPipe, buffer, i);
-
-            last_pressure(myPipe, buffer, i);
+            excel_last_pressure(myPipe, buffer.previous(), i);
             rashet(myPipe, ro.massiv[i], buffer.current()[0], buffer.previous()[0]);
             rashet(myPipe, u.massiv[i], buffer.current()[1], buffer.previous()[1]);
             z.pressure = euler(myPipe, buffer, i);
@@ -306,7 +279,7 @@ int main()
         else {
             // Используем переменную z в блоке else
             euler(myPipe, buffer, i);
-            last_pressure(myPipe, buffer, i);
+            excel_last_pressure(myPipe, buffer.previous(), i);
             rashet(myPipe, ro.massiv[i], buffer.current()[0], buffer.previous()[0]);
             rashet(myPipe, u.massiv[i], buffer.current()[1], buffer.previous()[1]);
             excel(myPipe, buffer.previous(), i, z.pressure);
