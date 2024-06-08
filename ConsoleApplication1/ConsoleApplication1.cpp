@@ -336,3 +336,113 @@ TEST(BLOCK3, TASK2) {
 }
 
 
+/// @brief Труба из заданий блока 3
+pipe block3_task4_pipe()
+{
+    pipe myPipe;
+    myPipe.L = 100000;
+    myPipe.L = 100e3;
+    myPipe.D_vnesh = 720e-3;
+    myPipe.b = 10e-3;
+    myPipe.z_0 = 100;
+    myPipe.z_L = 50;
+    myPipe.N = 101;
+    
+    myPipe.abc = 15e-6;
+    return myPipe;
+}
+
+/// @brief задача 3
+TEST(BLOCK3, TASK3) {
+
+    pipe myPipe = block3_task4_pipe();
+
+    vector<double> ro;
+    ro = { 900,
+        880,
+        880,
+        890,
+        890,
+        880,
+        880,
+        870 };
+   
+    vector<double> u;
+    u = { 0.000015,
+        0.000013,
+        0.000013,
+        0.000014,
+        0.000014,
+        0.000013,
+        0.000013,
+        0.000012 }; //значения кинемат. вязкости на входе трубы
+   
+    vector<double> pressure;
+    pressure = { 6000000,
+        5800000,
+        5800000,
+        5900000,
+        5900000,
+        5800000,
+        5800000,
+        5700000 };
+
+    vector<double> Q;
+    Q = { 0.192325,
+        0.200000,
+        0.210000,
+        0.200000,
+        0.180000,
+        0.210000,
+        0.210000,
+        0.210000 };
+
+    
+
+    vector<double> ro_begin(myPipe.N, ro[0]);
+    vector<double> u_begin(myPipe.N, u [0]);
+    vector<double> pressure_begin(myPipe.N, pressure[0]);
+
+    data_iterazii z;
+    z.buffer;
+    z.pressure = { 0 };
+
+    ring_buffer_t<vector<vector<double>>> buffer(2, { ro_begin, u_begin,pressure_begin });
+    size_t  total_layers = Q.size();
+        
+    for (size_t i = 0; i < total_layers; i++) {
+        if (i == 0) {
+            myPipe.p_0 = pressure[i];
+            myPipe.Q = Q[i];
+            myPipe.V = myPipe.get_V();
+            euler(myPipe, buffer, i);
+            excel_last_pressure("pressure_last_1.3.csv", myPipe, buffer.previous(), i);
+            party_layer(myPipe, ro[i], buffer.current()[0], buffer.previous()[0]);
+            party_layer(myPipe, u[i], buffer.current()[1], buffer.previous()[1]);
+            z.pressure = euler(myPipe, buffer, i);
+            excel("3block_1.3.csv", myPipe, buffer.previous(), i, z.pressure);
+            buffer.advance(1);
+        }
+        else {
+            // Используем переменную z в блоке else
+            myPipe.p_0 = pressure[i];
+            myPipe.Q = Q[i];
+            myPipe.V = myPipe.get_V();
+            euler(myPipe, buffer, i);
+            excel_last_pressure("pressure_last_1.3.csv", myPipe, buffer.previous(), i);
+            party_layer(myPipe, ro[i], buffer.current()[0], buffer.previous()[0]);
+            party_layer(myPipe, u[i], buffer.current()[1], buffer.previous()[1]);
+            excel("3block_1.3.csv", myPipe, buffer.previous(), i, z.pressure);
+            buffer.advance(1);
+        }
+    }
+
+
+
+
+
+
+
+}
+
+
