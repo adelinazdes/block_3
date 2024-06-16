@@ -462,9 +462,6 @@ TEST(BLOCK3, TASK3) {
             myPipe.V = myPipe.get_V();
             myPipe.p_0 = pressure_int[i];
             myPipe.time = time_modeling[i];
-            double prA = pressure_int[i];
-            double pr = pressure_int[i - 1];
-           
             euler(myPipe, buffer, i);
             excel_last_pressure("pressure_last_1.3.csv", myPipe, buffer.previous(), i);
             party_layer(myPipe, ro_int[i+1], buffer.current()[0], buffer.previous()[0]);
