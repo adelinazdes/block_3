@@ -437,14 +437,15 @@ TEST(BLOCK3, TASK3) {
     vector<double> ro_int= interpolation(time_modeling, ro);
     vector<double> u_int = interpolation(time_modeling, u);
     vector<double> pressure_int = interpolation(time_modeling, pressure);
+    vector<double> Q_int = interpolation(time_modeling, Q);
     
     ring_buffer_t<vector<vector<double>>> buffer(2, { ro_begin, u_begin,pressure_begin });
 
     vector<double> pressure_first_layer;// вектор содержащий значения давлений первого слоя 
         
-    for (size_t i = 0; i < total_layers+1; i++) {
+    for (size_t i = 0; i < total_layers; i++) {
         if (i == 0) {
-            myPipe.Q = Q[i];
+            myPipe.Q = Q_int[i];
             myPipe.V = myPipe.get_V();
             myPipe.p_0 = pressure[i];
             myPipe.time = time_modeling[i];
@@ -457,17 +458,21 @@ TEST(BLOCK3, TASK3) {
             buffer.advance(1);        
         }
         else {
-            myPipe.Q = Q[i-1];
+            myPipe.Q = Q_int[i];
             myPipe.V = myPipe.get_V();
-            myPipe.p_0 = pressure_int[i-1];
+            myPipe.p_0 = pressure_int[i];
             myPipe.time = time_modeling[i];
+            double prA = pressure_int[i];
+            double pr = pressure_int[i - 1];
+           
             euler(myPipe, buffer, i);
             excel_last_pressure("pressure_last_1.3.csv", myPipe, buffer.previous(), i);
-            party_layer(myPipe, ro_int[i], buffer.current()[0], buffer.previous()[0]);
-            party_layer(myPipe, u_int[i], buffer.current()[1], buffer.previous()[1]);
+            party_layer(myPipe, ro_int[i+1], buffer.current()[0], buffer.previous()[0]);
+            party_layer(myPipe, u_int[i+1], buffer.current()[1], buffer.previous()[1]);
             excel("3block_1.3.csv", myPipe, buffer.previous(), i, pressure_first_layer);
             buffer.advance(1);
-
+            cout << pressure_int[i] << ", ";
+            cout << ro_int[i] << ",";
         }
     }
         
