@@ -452,7 +452,7 @@ TEST(BLOCK3, TASK3) {
 
     Q_int.push_back(Q[0]);
 
-    for (size_t i = 0; i < total_layers; i++) {
+    for (size_t i = 0; i < total_layers-1; i++) {
         time_modeling = time_step_characteristics_method(myPipe, Q_int[i], i, time_modeling);
         Q_int.push_back(interpolation_scalar(time_modeling[i + 1], Q));
              
@@ -492,3 +492,37 @@ TEST(BLOCK3, TASK3) {
 
 
 }
+
+struct density_viscosity_pressure_layer
+{
+    vector<double> density;
+    vector<double> viscosity;
+    vector<double> pressure;
+};
+
+////Проблемно-ориентированный буфер из 3 слоев
+//density_viscosity_pressure_layer initialization_layer;
+//initialization_layer.density = vector<double>(myPipe.N, ro[0]);
+//initialization_layer.viscosity = vector<double>(myPipe.N, u[0]);
+//initialization_layer.pressure = vector<double>(myPipe.N, pressure[0]);
+//
+//ring_buffer_t<density_viscosity_pressure_layer> buffer(2, initialization_layer);
+//
+//vector<double> pressure_first_layer;// вектор содержащий значения давлений первого слоя 
+//
+//for (size_t i = 0; i < total_layers; i++) {
+//    myPipe.Q = Q_int[i];
+//    myPipe.V = myPipe.get_V();
+//    myPipe.p_0 = pressure_int[i];
+//    myPipe.time = time_modeling[i];
+//    euler(myPipe, buffer, i);
+//    excel_last_pressure("pressure_last_1.3.csv", myPipe, buffer.previous(), i);
+//    party_layer(myPipe, ro_int[i], buffer.current().density, buffer.previous().density);
+//    party_layer(myPipe, u_int[i], buffer.current().viscosity, buffer.previous().viscosity);
+//    if (i == 0) {
+//        pressure_first_layer = euler(myPipe, buffer, i);
+//    }
+//    excel("3block_1.3.csv", myPipe, buffer.previous(), i, pressure_first_layer);
+//    buffer.advance(1);
+//
+//}
